@@ -1,0 +1,36 @@
+# macOS
+.DS_Store
+
+# Xcode — user-specific
+**/xcuserdata/
+*.xcuserstate
+*.xcuserdatad/
+
+# Xcode — build artifacts
+build/
+DerivedData/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Packages/
+Package.resolved
+
+# CocoaPods (not used yet, but defensive)
+Pods/
+
+# Carthage
+Carthage/Build/
+
+# Provisioning / signing
+*.mobileprovision
+*.p12
+*.cer
+ExportOptions.plist
+
+# Local env / secrets
+.env
+.env.local
+*.key
