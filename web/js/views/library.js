@@ -2,6 +2,7 @@
 
 import { getAllCards } from '../db.js';
 import { softDelete } from '../sync.js';
+import { speak, SPEAKER_SVG } from '../speech.js';
 
 const DAY_MS = 24 * 3600 * 1000;
 const TRASH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"/></svg>';
@@ -85,6 +86,11 @@ function row(card) {
   meta.append(reps, due);
   body.append(en, zh, meta);
 
+  const speaker = document.createElement('button');
+  speaker.className = 'speaker-btn';
+  speaker.innerHTML = SPEAKER_SVG;
+  speaker.addEventListener('click', () => speak(card.en));
+
   const del = document.createElement('button');
   del.className = 'delete-btn';
   del.innerHTML = TRASH_SVG;
@@ -94,7 +100,7 @@ function row(card) {
     render();
   });
 
-  el.append(body, del);
+  el.append(body, speaker, del);
   return el;
 }
 

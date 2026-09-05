@@ -5,9 +5,7 @@ import { makeCard, normalizeEn } from '../card.js';
 import { getAllCards, putCards } from '../db.js';
 import { scheduleSync } from '../sync.js';
 import { isConfigured, getWorkerURL, getToken, getProvider, getModel } from '../settings.js';
-import { speak } from '../speech.js';
-
-const SPEAKER_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6.5 8.5H3.5v7h3L11 19V5z" fill="currentColor" stroke="none"/><path d="M14.5 9a4 4 0 0 1 0 6M17 6.5a7.5 7.5 0 0 1 0 11"/></svg>';
+import { speak, SPEAKER_SVG } from '../speech.js';
 
 let root;
 let input, translateBtn, errorBox, resultBox;
