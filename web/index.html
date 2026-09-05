@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Chunks</title>
+  <meta name="description" content="中文一句话,生成最地道的英文表达,自动提取语块成闪卡,间隔记忆">
+  <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Chunks">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <main id="panels">
+    <section id="panel-translate" class="panel" data-title="翻译"></section>
+    <section id="panel-library" class="panel" data-title="卡片" hidden></section>
+    <section id="panel-review" class="panel" data-title="复习" hidden></section>
+    <section id="panel-settings" class="panel" data-title="设置" hidden></section>
+  </main>
+
+  <nav id="tabbar">
+    <button class="tab active" data-tab="translate" aria-label="翻译">
+      <svg viewBox="0 0 24 24"><path d="M4 5h9M8.5 5V3.5M11 5c-.6 3.2-2.9 6-6.5 8M6 8.5c1.2 2.6 3.7 4.6 6.8 5.5M13.5 20.5 17.5 10l4 10.5M14.8 17h5.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>翻译</span>
+    </button>
+    <button class="tab" data-tab="library" aria-label="卡片">
+      <svg viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="12" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7 4.5h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span>卡片</span>
+    </button>
+    <button class="tab" data-tab="review" aria-label="复习">
+      <svg viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 1 2.2 5.3M4.5 12V7.5M4.5 12H9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>复习</span>
+    </button>
+    <button class="tab" data-tab="settings" aria-label="设置">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 3.5v2.2M12 18.3v2.2M20.5 12h-2.2M5.7 12H3.5M18 6l-1.6 1.6M7.6 16.4 6 18M18 18l-1.6-1.6M7.6 7.6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span>设置</span>
+    </button>
+  </nav>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
