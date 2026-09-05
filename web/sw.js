@@ -1,7 +1,7 @@
 // Service Worker — 只缓存静态资源(cache-first),API 请求(跨域)一律不拦截。
 // 发版:改 CACHE_NAME 版本号即可让所有静态资源刷新。
 
-const CACHE_NAME = 'chunks-v4';
+const CACHE_NAME = 'chunks-v5';
 
 const PRECACHE = [
   './',

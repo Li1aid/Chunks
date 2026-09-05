@@ -4,10 +4,26 @@
 // local:浏览器 SpeechSynthesis。iOS 网页只开放一小组标准语音(隐私限制),
 //   挑选逻辑按 名称含 Premium > Enhanced > 其余、en-US > en-GB 排序,尽力而为。
 
-import { getWorkerURL, getToken, isConfigured, getTTSEngine } from './settings.js';
+import { getWorkerURL, getToken, isConfigured, getTTSEngine, getTTSVoice, getTTSRate } from './settings.js';
 
 /** 喇叭图标 — 三个 tab 共用。 */
 export const SPEAKER_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6.5 8.5H3.5v7h3L11 19V5z" fill="currentColor" stroke="none"/><path d="M14.5 9a4 4 0 0 1 0 6M17 6.5a7.5 7.5 0 0 1 0 11"/></svg>';
+
+/** aura-1 的 12 个音色 — 设置页选择用,id 与 Worker 白名单一致。 */
+export const TTS_VOICES = [
+  { id: 'luna', label: '露娜(女·柔和)' },
+  { id: 'asteria', label: '阿斯特里亚(女·清晰)' },
+  { id: 'stella', label: '斯特拉(女)' },
+  { id: 'hera', label: '赫拉(女)' },
+  { id: 'athena', label: '雅典娜(女·英音)' },
+  { id: 'orion', label: '俄里翁(男·沉稳)' },
+  { id: 'arcas', label: '阿卡斯(男)' },
+  { id: 'perseus', label: '珀尔修斯(男)' },
+  { id: 'orpheus', label: '俄耳甫斯(男)' },
+  { id: 'zeus', label: '宙斯(男·浑厚)' },
+  { id: 'helios', label: '赫利俄斯(男·英音)' },
+  { id: 'angus', label: '安格斯(男·爱尔兰)' },
+];
 
 /** 朗读入口:重复调用打断上一次。 */
 export function speak(text) {
@@ -27,22 +43,29 @@ async function speakRemote(text) {
   if (!player) throw new Error('no audio');
   if ('speechSynthesis' in window) speechSynthesis.cancel();
 
-  let buf = await cacheGet(text).catch(() => null);
+  // 缓存键带音色:换音色不会放出旧声音的缓存
+  const voice = getTTSVoice();
+  const key = `${voice}|${text}`;
+  let buf = await cacheGet(key).catch(() => null);
   if (!buf) {
     const resp = await fetch(`${getWorkerURL()}/tts`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-app-token': getToken() },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ text, speaker: voice }),
     });
     if (!resp.ok) throw new Error(`tts ${resp.status}`);
     buf = await resp.arrayBuffer();
     if (buf.byteLength < 200) throw new Error('tts empty');
-    cachePut(text, buf).catch(() => {});
+    cachePut(key, buf).catch(() => {});
   }
 
   const url = URL.createObjectURL(new Blob([buf], { type: 'audio/mpeg' }));
   player.pause();
   player.src = url;
+  // 变速不变调,对缓存音频同样即时生效
+  player.preservesPitch = true;
+  player.defaultPlaybackRate = getTTSRate();
+  player.playbackRate = getTTSRate();
   player.onended = () => URL.revokeObjectURL(url);
   player.onerror = () => URL.revokeObjectURL(url);
   await player.play();
@@ -131,7 +154,7 @@ function speakLocal(text) {
   const v = ensureVoice();
   if (v) u.voice = v;
   u.lang = 'en-US';
-  u.rate = 0.9;
+  u.rate = getTTSRate();
   speechSynthesis.cancel();
   speechSynthesis.speak(u);
 }

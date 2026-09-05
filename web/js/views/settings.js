@@ -6,12 +6,15 @@ import { syncNow, resetSync, onStatus, statusText, isSyncing, scheduleSync } fro
 import {
   getWorkerURL, setWorkerURL, getToken, setToken, isConfigured,
   getProvider, setProvider, getModel, setModel,
-  getReviewDirection, setReviewDirection, getTTSEngine, setTTSEngine,
+  getReviewDirection, setReviewDirection,
+  getTTSEngine, setTTSEngine, getTTSVoice, setTTSVoice, getTTSRate, setTTSRate,
 } from '../settings.js';
+import { speak, TTS_VOICES } from '../speech.js';
 
 let root;
 let urlInput, tokenInput, providerSelect, modelSelect, aiFooter;
-let statusValue, syncBtn, resetBtn, directionSelect, ttsSelect, countValue;
+let statusValue, syncBtn, resetBtn, directionSelect, countValue;
+let ttsSelect, ttsVoiceSelect, ttsRateSelect;
 
 export function mount(el) {
   root = el;
@@ -53,8 +56,14 @@ export function mount(el) {
         <option value="remote">在线高音质</option>
         <option value="local">本地系统</option>
       </select></div>
+      <div class="form-row"><span class="label">音色</span><select class="tts-voice-select"></select></div>
+      <div class="form-row"><span class="label">语速</span><select class="tts-rate-select">
+        <option value="0.8">慢</option>
+        <option value="1">正常</option>
+        <option value="1.2">快</option>
+      </select></div>
     </div>
-    <div class="form-footer">在线引擎(Deepgram aura)经由你的 Worker 生成:每个语块首次朗读需联网约 1 秒,之后本机缓存、离线可放;失败时自动回落本地系统语音。本地引擎零流量,但 iOS 只向网页开放标准音质。</div>
+    <div class="form-footer">在线引擎(Deepgram aura)经由你的 Worker 生成:每个语块首次朗读需联网约 1 秒,之后本机缓存、离线可放;失败时自动回落本地系统语音。切换音色或语速会立刻试听一句。音色仅在线引擎有效。</div>
 
     <div class="section-label">数据</div>
     <div class="form-card">
@@ -72,6 +81,8 @@ export function mount(el) {
   resetBtn = root.querySelector('.reset-btn');
   directionSelect = root.querySelector('.direction-select');
   ttsSelect = root.querySelector('.tts-select');
+  ttsVoiceSelect = root.querySelector('.tts-voice-select');
+  ttsRateSelect = root.querySelector('.tts-rate-select');
   countValue = root.querySelector('.count-value');
 
   for (const [id, p] of Object.entries(PROVIDERS)) {
@@ -79,6 +90,13 @@ export function mount(el) {
     opt.value = id;
     opt.textContent = p.displayName;
     providerSelect.append(opt);
+  }
+
+  for (const v of TTS_VOICES) {
+    const opt = document.createElement('option');
+    opt.value = v.id;
+    opt.textContent = v.label;
+    ttsVoiceSelect.append(opt);
   }
 
   root.querySelector('.save-btn').addEventListener('click', save);
@@ -94,7 +112,20 @@ export function mount(el) {
     await resetSync();
     refreshCount();
   });
-  ttsSelect.addEventListener('change', () => setTTSEngine(ttsSelect.value));
+  const SAMPLE = "Hello! I'm your new voice.";
+  ttsSelect.addEventListener('change', () => {
+    setTTSEngine(ttsSelect.value);
+    ttsVoiceSelect.disabled = ttsSelect.value === 'local';
+    speak(SAMPLE);
+  });
+  ttsVoiceSelect.addEventListener('change', () => {
+    setTTSVoice(ttsVoiceSelect.value);
+    speak(SAMPLE);
+  });
+  ttsRateSelect.addEventListener('change', () => {
+    setTTSRate(ttsRateSelect.value);
+    speak(SAMPLE);
+  });
 
   onStatus((s) => {
     statusValue.textContent = statusText(s);
@@ -119,6 +150,9 @@ function refreshAll() {
   refreshAI();
   directionSelect.value = getReviewDirection();
   ttsSelect.value = getTTSEngine();
+  ttsVoiceSelect.value = getTTSVoice();
+  ttsVoiceSelect.disabled = getTTSEngine() === 'local';
+  ttsRateSelect.value = String(getTTSRate());
   syncBtn.disabled = !isConfigured() || isSyncing();
   resetBtn.disabled = !isConfigured() || isSyncing();
   refreshCount();

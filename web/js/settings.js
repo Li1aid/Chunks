@@ -41,6 +41,15 @@ export function getTTSEngine() {
 }
 export const setTTSEngine = (v) => set('ttsEngine', v);
 
+// 在线音色(aura-1 speaker id)与语速(0.8 / 1 / 1.2,双引擎共用)
+export const getTTSVoice = () => get('ttsVoice') ?? 'luna';
+export const setTTSVoice = (v) => set('ttsVoice', v);
+export function getTTSRate() {
+  const r = Number(get('ttsRate'));
+  return r === 0.8 || r === 1.2 ? r : 1;
+}
+export const setTTSRate = (r) => set('ttsRate', r);
+
 export function getReviewDirection() {
   const v = get('reviewDirection');
   return v === 'enToZh' ? 'enToZh' : 'zhToEn';
