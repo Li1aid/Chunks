@@ -155,6 +155,8 @@ SM-2 → FSRS bootstrap(与 iOS 相同):首次评分时若 `state==0 && stabilit
 - 语速 0.9;重复调用先 `cancel()` 再 `speak()`。
 - **与 iOS 的已知差异(接受)**:web 无法绕过 iOS 静音键(iOS 版用 AVAudioSession playback 可以);无法枚举 voice 质量枚举值,只能靠名称启发式;且 iOS 出于反指纹策略只向网页开放一小组标准语音——系统下载的「增强/高级」voice 通常仅原生 app 可见,web 版语音品质大概率始终是「标准」。语音列表按网页进程加载,更新需彻底重开 app。
 
+**2026-09-05 更新**:因 iOS 对网页的语音限制,新增在线 TTS——Worker 加 `POST /tts`(Workers AI `@cf/deepgram/aura-1`,口令保护,文本 ≤500 字符),前端 `speech.js` 默认走在线引擎并按文本缓存 MP3 于独立 IndexedDB 库 `chunks-tts`(重复朗读零流量、离线可放),失败自动回落本地 SpeechSynthesis;设置页语音节改为「朗读引擎:在线高音质 / 本地系统」。Worker 自此纳入 wrangler 管理(`yuyukai/worker/wrangler.toml`)。
+
 ## 11. PWA
 
 - `manifest.webmanifest`:`display: standalone`,主屏幕启动无浏览器边框。

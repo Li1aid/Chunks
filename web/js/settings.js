@@ -35,6 +35,12 @@ export function getModel(provider) {
 }
 export const setModel = (provider, model) => set(`aiModel_${provider}`, model);
 
+// 朗读引擎:remote = Worker TTS(默认),local = 浏览器 SpeechSynthesis
+export function getTTSEngine() {
+  return get('ttsEngine') === 'local' ? 'local' : 'remote';
+}
+export const setTTSEngine = (v) => set('ttsEngine', v);
+
 export function getReviewDirection() {
   const v = get('reviewDirection');
   return v === 'enToZh' ? 'enToZh' : 'zhToEn';

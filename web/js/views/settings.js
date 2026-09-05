@@ -6,13 +6,12 @@ import { syncNow, resetSync, onStatus, statusText, isSyncing, scheduleSync } fro
 import {
   getWorkerURL, setWorkerURL, getToken, setToken, isConfigured,
   getProvider, setProvider, getModel, setModel,
-  getReviewDirection, setReviewDirection,
+  getReviewDirection, setReviewDirection, getTTSEngine, setTTSEngine,
 } from '../settings.js';
-import { voiceLabel, refreshVoice } from '../speech.js';
 
 let root;
 let urlInput, tokenInput, providerSelect, modelSelect, aiFooter;
-let statusValue, syncBtn, resetBtn, directionSelect, voiceValue, countValue;
+let statusValue, syncBtn, resetBtn, directionSelect, ttsSelect, countValue;
 
 export function mount(el) {
   root = el;
@@ -50,10 +49,12 @@ export function mount(el) {
 
     <div class="section-label" style="padding-top:16px">语音</div>
     <div class="form-card">
-      <div class="form-row"><span class="label">当前语音</span><span class="value voice-value"></span></div>
-      <button class="row-btn voice-refresh-btn">刷新当前语音</button>
+      <div class="form-row"><span class="label">朗读引擎</span><select class="tts-select">
+        <option value="remote">在线高音质</option>
+        <option value="local">本地系统</option>
+      </select></div>
     </div>
-    <div class="form-footer">iOS 出于隐私限制,只向网页开放一小组标准语音——系统里下载的「增强/高级」voice 通常仅原生 app 可用,网页版大概率始终显示「标准」。语音列表在 app 启动时加载:如有变化,先彻底关闭本 app(上滑杀掉)再重开,然后点「刷新当前语音」。</div>
+    <div class="form-footer">在线引擎(Deepgram aura)经由你的 Worker 生成:每个语块首次朗读需联网约 1 秒,之后本机缓存、离线可放;失败时自动回落本地系统语音。本地引擎零流量,但 iOS 只向网页开放标准音质。</div>
 
     <div class="section-label">数据</div>
     <div class="form-card">
@@ -70,7 +71,7 @@ export function mount(el) {
   syncBtn = root.querySelector('.sync-btn');
   resetBtn = root.querySelector('.reset-btn');
   directionSelect = root.querySelector('.direction-select');
-  voiceValue = root.querySelector('.voice-value');
+  ttsSelect = root.querySelector('.tts-select');
   countValue = root.querySelector('.count-value');
 
   for (const [id, p] of Object.entries(PROVIDERS)) {
@@ -93,16 +94,7 @@ export function mount(el) {
     await resetSync();
     refreshCount();
   });
-  const voiceBtn = root.querySelector('.voice-refresh-btn');
-  voiceBtn.addEventListener('click', () => {
-    voiceValue.textContent = refreshVoice();
-    voiceBtn.textContent = '已刷新 ✓';
-    voiceBtn.disabled = true;
-    setTimeout(() => {
-      voiceBtn.textContent = '刷新当前语音';
-      voiceBtn.disabled = false;
-    }, 900);
-  });
+  ttsSelect.addEventListener('change', () => setTTSEngine(ttsSelect.value));
 
   onStatus((s) => {
     statusValue.textContent = statusText(s);
@@ -126,7 +118,7 @@ function refreshAll() {
 
   refreshAI();
   directionSelect.value = getReviewDirection();
-  voiceValue.textContent = voiceLabel();
+  ttsSelect.value = getTTSEngine();
   syncBtn.disabled = !isConfigured() || isSyncing();
   resetBtn.disabled = !isConfigured() || isSyncing();
   refreshCount();
