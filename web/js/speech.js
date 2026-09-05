@@ -33,10 +33,15 @@ function ensureVoice() {
 }
 
 if ('speechSynthesis' in window) {
-  // iOS Safari 的 voices 列表异步加载,就绪后重挑一次
-  speechSynthesis.addEventListener?.('voiceschanged', () => {
+  const repick = () => {
     voice = pickBestVoice();
     picked = voice !== null;
+  };
+  // iOS Safari 的 voices 列表异步加载,就绪后重挑一次
+  speechSynthesis.addEventListener?.('voiceschanged', repick);
+  // 从系统设置回到 app 时重挑:在向网页开放完整语音列表的平台上能捡到新语音
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') repick();
   });
 }
 

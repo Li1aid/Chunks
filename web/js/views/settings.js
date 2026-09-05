@@ -53,7 +53,7 @@ export function mount(el) {
       <div class="form-row"><span class="label">当前语音</span><span class="value voice-value"></span></div>
       <button class="row-btn voice-refresh-btn">刷新当前语音</button>
     </div>
-    <div class="form-footer">默认「标准」声音机械感重。到 iOS 设置 → 辅助功能 → 朗读内容 → 语音 → 英语,下载「增强」或「高级」voice,回来点「刷新当前语音」即可生效(Safari 与系统共用语音库)。</div>
+    <div class="form-footer">iOS 出于隐私限制,只向网页开放一小组标准语音——系统里下载的「增强/高级」voice 通常仅原生 app 可用,网页版大概率始终显示「标准」。语音列表在 app 启动时加载:如有变化,先彻底关闭本 app(上滑杀掉)再重开,然后点「刷新当前语音」。</div>
 
     <div class="section-label">数据</div>
     <div class="form-card">
@@ -93,8 +93,15 @@ export function mount(el) {
     await resetSync();
     refreshCount();
   });
-  root.querySelector('.voice-refresh-btn').addEventListener('click', () => {
+  const voiceBtn = root.querySelector('.voice-refresh-btn');
+  voiceBtn.addEventListener('click', () => {
     voiceValue.textContent = refreshVoice();
+    voiceBtn.textContent = '已刷新 ✓';
+    voiceBtn.disabled = true;
+    setTimeout(() => {
+      voiceBtn.textContent = '刷新当前语音';
+      voiceBtn.disabled = false;
+    }, 900);
   });
 
   onStatus((s) => {

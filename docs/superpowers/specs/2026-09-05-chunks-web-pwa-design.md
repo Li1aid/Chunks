@@ -153,7 +153,7 @@ SM-2 → FSRS bootstrap(与 iOS 相同):首次评分时若 `state==0 && stabilit
 - `speechSynthesis` 实现;`voiceschanged` 事件后初始化(iOS Safari 的 voices 列表异步加载)。
 - 选 voice 启发式(对齐 iOS 的 Premium > Enhanced > Default 意图):优先 name 含 `Premium`/`Enhanced` 的英文 voice,再按 `en-US > en-GB > 其他 en` 排序,兜底任一 `en` voice。
 - 语速 0.9;重复调用先 `cancel()` 再 `speak()`。
-- **与 iOS 的已知差异(接受)**:web 无法绕过 iOS 静音键(iOS 版用 AVAudioSession playback 可以);无法枚举 voice 质量枚举值,只能靠名称启发式。
+- **与 iOS 的已知差异(接受)**:web 无法绕过 iOS 静音键(iOS 版用 AVAudioSession playback 可以);无法枚举 voice 质量枚举值,只能靠名称启发式;且 iOS 出于反指纹策略只向网页开放一小组标准语音——系统下载的「增强/高级」voice 通常仅原生 app 可见,web 版语音品质大概率始终是「标准」。语音列表按网页进程加载,更新需彻底重开 app。
 
 ## 11. PWA
 
