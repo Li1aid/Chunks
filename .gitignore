@@ -34,3 +34,7 @@ ExportOptions.plist
 .env
 .env.local
 *.key
+
+# Local tool state
+.wrangler/
+.codegraph/
