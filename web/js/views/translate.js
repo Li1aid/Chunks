@@ -187,20 +187,23 @@ function render(result, direction, savedInfo) {
   for (const phrase of result.phrases) {
     const item = document.createElement('div');
     item.className = 'phrase-item';
+    const body = document.createElement('div');
+    body.className = 'phrase-body';
     const en = document.createElement('div');
     en.className = 'phrase-en';
     en.textContent = phrase.en;
-    item.append(en);
+    body.append(en);
     const zh = document.createElement('div');
     zh.className = 'phrase-zh';
     zh.textContent = phrase.zh;
-    item.append(zh);
+    body.append(zh);
     if (phrase.example) {
       const ex = document.createElement('div');
       ex.className = 'phrase-example';
       ex.textContent = phrase.example;
-      item.append(ex);
+      body.append(ex);
     }
+    item.append(body, speakerButton(phrase.en));
     list.append(item);
   }
   resultBox.append(list);
