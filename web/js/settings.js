@@ -11,7 +11,12 @@ export const DEMO_WORKER_URL = 'https://flashcards.aidenyang5995.workers.dev';
 if (typeof location !== 'undefined' && new URLSearchParams(location.search).has('demo')) {
   try { localStorage.setItem('demo', '1'); } catch { /* 无痕模式等 */ }
 }
-export const isDemo = () => { try { return localStorage.getItem('demo') === '1'; } catch { return false; } };
+// 专门的演示网址(chunks-demo.aidenyang.me)打开即是演示模式,不需要 ?demo
+export const isDemoHost = () => typeof location !== 'undefined' && /^chunks-demo\./.test(location.hostname);
+export const isDemo = () => {
+  if (isDemoHost()) return true;
+  try { return localStorage.getItem('demo') === '1'; } catch { return false; }
+};
 export function exitDemo() {
   localStorage.removeItem('demo');
   location.replace(location.pathname);

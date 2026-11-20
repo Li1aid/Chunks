@@ -5,7 +5,7 @@ An English-learning app that starts from the sentence you just couldn't say.
 <img src="https://aidenyang.me/Assets/chunks-poster.svg" width="720">
 
 **Status:** native iOS app + web PWA, both in this repo
-**Try it:** [chunks-web.pages.dev/?demo](https://chunks-web.pages.dev/?demo) — public demo with sample cards. Translations use the real AI, limited per day; demo data stays on your device and never syncs.
+**Try it:** [chunks-demo.aidenyang.me](https://chunks-demo.aidenyang.me) (or [chunks-web.pages.dev/?demo](https://chunks-web.pages.dev/?demo)) — public demo with sample cards. Translations use the real AI, limited per day; demo data stays on your device and never syncs.
 **Case study:** [aidenyang.me/projects/chunks.html](https://aidenyang.me/projects/chunks.html) — includes a working demo
 
 ## What it does
@@ -25,7 +25,7 @@ Vocabulary apps teach words you never use. Translators give you the sentence and
 
 - **App** — SwiftUI + SwiftData. Four tabs: Translate, Cards, Review, Settings.
 - **Web** — the same four tabs as a zero-build vanilla-JS PWA (`web/`): IndexedDB storage, same FSRS and sync protocol, deployable to any static host. iOS 26-style UI (floating glass tab bar, swipe actions), light and dark mode.
-- **Demo mode** — `?demo` switches the web app to a separate local database seeded with sample cards, uses a public demo token on the Worker (translation and speech only, per-IP daily limits), and turns sync off.
+- **Demo mode** — the `chunks-demo.` host (or `?demo`) switches the web app to a separate local database seeded with sample cards, uses a public demo token on the Worker (translation and speech only, per-IP daily limits), and turns sync off.
 - **AI** — one Claude call per sentence returns the translation and 1–4 phrases as JSON, each with the exact span it came from in the input (`src`) and in the translation (`dst`) for the linked highlight.
 - **Backend** — a single Cloudflare Worker proxies the AI provider (keys stay server-side) and syncs cards to D1.
 - **Sync** — offline-first, last-write-wins by timestamp, soft deletes so every device learns about removals.

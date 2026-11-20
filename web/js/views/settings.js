@@ -4,7 +4,7 @@ import { PROVIDERS } from '../ai.js';
 import { getAllCards } from '../db.js';
 import { syncNow, resetSync, onStatus, statusText, isSyncing, scheduleSync } from '../sync.js';
 import {
-  isDemo, exitDemo,
+  isDemo, isDemoHost, exitDemo,
   getWorkerURL, setWorkerURL, getToken, setToken, isConfigured,
   getProvider, setProvider, getModel, setModel,
   getReviewDirection, setReviewDirection,
@@ -122,6 +122,7 @@ export function mount(el) {
   root.querySelector('.demo-sec').hidden = !isDemo();
   root.querySelector('.sec-hide-demo').hidden = isDemo();
   root.querySelector('.exit-demo-btn').addEventListener('click', exitDemo);
+  root.querySelector('.exit-demo-btn').hidden = isDemoHost(); // 演示专用网址上不提供退出
   root.querySelector('.save-btn').addEventListener('click', save);
   root.querySelector('.copy-url-btn').addEventListener('click', async () => {
     const status = root.querySelector('.copy-url-status');
