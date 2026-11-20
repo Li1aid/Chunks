@@ -11,27 +11,39 @@ export const SPEAKER_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="current
 
 /** aura-1 的 12 个音色 — 设置页选择用,id 与 Worker 白名单一致。 */
 export const TTS_VOICES = [
-  { id: 'luna', label: '露娜(女·柔和)' },
-  { id: 'asteria', label: '阿斯特里亚(女·清晰)' },
-  { id: 'stella', label: '斯特拉(女)' },
-  { id: 'hera', label: '赫拉(女)' },
-  { id: 'athena', label: '雅典娜(女·英音)' },
-  { id: 'orion', label: '俄里翁(男·沉稳)' },
-  { id: 'arcas', label: '阿卡斯(男)' },
-  { id: 'perseus', label: '珀尔修斯(男)' },
-  { id: 'orpheus', label: '俄耳甫斯(男)' },
-  { id: 'zeus', label: '宙斯(男·浑厚)' },
-  { id: 'helios', label: '赫利俄斯(男·英音)' },
-  { id: 'angus', label: '安格斯(男·爱尔兰)' },
+  { id: 'luna', label: 'Luna (female, soft)' },
+  { id: 'asteria', label: 'Asteria (female, clear)' },
+  { id: 'stella', label: 'Stella (female)' },
+  { id: 'hera', label: 'Hera (female)' },
+  { id: 'athena', label: 'Athena (female, British)' },
+  { id: 'orion', label: 'Orion (male, calm)' },
+  { id: 'arcas', label: 'Arcas (male)' },
+  { id: 'perseus', label: 'Perseus (male)' },
+  { id: 'orpheus', label: 'Orpheus (male)' },
+  { id: 'zeus', label: 'Zeus (male, deep)' },
+  { id: 'helios', label: 'Helios (male, British)' },
+  { id: 'angus', label: 'Angus (male, Irish)' },
 ];
 
-/** 朗读入口:重复调用打断上一次。 */
-export function speak(text) {
+// 正在朗读的按钮:播放期间加 .playing,让「正在读」看得见
+let activeEl = null;
+function setActive(el) {
+  if (activeEl && activeEl !== el) activeEl.classList.remove('playing');
+  activeEl = el || null;
+  activeEl?.classList.add('playing');
+}
+function clearActive(el) {
+  if (!el || activeEl === el) { activeEl?.classList.remove('playing'); activeEl = null; }
+}
+
+/** 朗读入口:重复调用打断上一次。el(可选)= 触发朗读的按钮。 */
+export function speak(text, el) {
+  setActive(el);
   if (getTTSEngine() === 'remote' && isConfigured()) {
-    speakRemote(text).catch(() => speakLocal(text));
+    speakRemote(text, el).catch(() => speakLocal(text, el));
     return;
   }
-  speakLocal(text);
+  speakLocal(text, el);
 }
 
 // ===== 在线引擎 =====
@@ -39,7 +51,7 @@ export function speak(text) {
 // 共享同一个 <audio> 实例:在 iOS 上比每次新建更不容易触发手势播放限制
 const player = typeof Audio !== 'undefined' ? new Audio() : null;
 
-async function speakRemote(text) {
+async function speakRemote(text, el) {
   if (!player) throw new Error('no audio');
   if ('speechSynthesis' in window) speechSynthesis.cancel();
 
@@ -66,8 +78,8 @@ async function speakRemote(text) {
   player.preservesPitch = true;
   player.defaultPlaybackRate = getTTSRate();
   player.playbackRate = getTTSRate();
-  player.onended = () => URL.revokeObjectURL(url);
-  player.onerror = () => URL.revokeObjectURL(url);
+  player.onended = () => { URL.revokeObjectURL(url); clearActive(el); };
+  player.onerror = () => { URL.revokeObjectURL(url); clearActive(el); };
   await player.play();
 }
 
@@ -147,14 +159,16 @@ if ('speechSynthesis' in window) {
   });
 }
 
-function speakLocal(text) {
-  if (!('speechSynthesis' in window)) return;
+function speakLocal(text, el) {
+  if (!('speechSynthesis' in window)) { clearActive(el); return; }
   player?.pause();
   const u = new SpeechSynthesisUtterance(text);
   const v = ensureVoice();
   if (v) u.voice = v;
   u.lang = 'en-US';
   u.rate = getTTSRate();
+  u.onend = () => clearActive(el);
+  u.onerror = () => clearActive(el);
   speechSynthesis.cancel();
   speechSynthesis.speak(u);
 }

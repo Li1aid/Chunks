@@ -1,7 +1,7 @@
 {
   "name": "Chunks",
   "short_name": "Chunks",
-  "description": "中文一句话,生成最地道的英文表达,自动提取语块成闪卡,间隔记忆",
+  "description": "Type the sentence you couldn't say. Get natural English, and the useful phrases become flashcards for spaced review.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

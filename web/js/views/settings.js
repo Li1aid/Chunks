@@ -4,6 +4,7 @@ import { PROVIDERS } from '../ai.js';
 import { getAllCards } from '../db.js';
 import { syncNow, resetSync, onStatus, statusText, isSyncing, scheduleSync } from '../sync.js';
 import {
+  isDemo, exitDemo,
   getWorkerURL, setWorkerURL, getToken, setToken, isConfigured,
   getProvider, setProvider, getModel, setModel,
   getReviewDirection, setReviewDirection,
@@ -19,56 +20,75 @@ let ttsSelect, ttsVoiceSelect, ttsRateSelect;
 export function mount(el) {
   root = el;
   root.innerHTML = `
-    <div class="large-title">设置</div>
+    <div class="large-title">Settings</div>
 
-    <div class="section-label">服务器</div>
+    <div class="demo-sec">
+      <div class="section-label">Demo</div>
+      <div class="form-card">
+        <div class="form-row"><span class="label">Mode</span><span class="value">Public demo</span></div>
+        <button class="row-btn exit-demo-btn">Exit Demo</button>
+      </div>
+      <div class="form-footer">Translations use the real AI, limited per day. Sample cards stay on this device and never sync.</div>
+    </div>
+
+    <div class="sec-hide-demo">
+    <div class="section-label">Server</div>
     <div class="form-card">
       <div class="form-row"><input class="url-input" type="url" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
       <div class="form-row"><input class="token-input" type="password" autocapitalize="off"></div>
-      <button class="row-btn save-btn">保存</button>
+      <button class="row-btn save-btn">Save</button>
     </div>
 
     <div class="section-label" style="padding-top:16px">AI</div>
     <div class="form-card">
-      <div class="form-row"><span class="label">引擎</span><select class="provider-select"></select></div>
-      <div class="form-row"><span class="label">模型</span><select class="model-select"></select></div>
+      <div class="form-row"><span class="label">Provider</span><select class="provider-select"></select></div>
+      <div class="form-row"><span class="label">Model</span><select class="model-select"></select></div>
     </div>
     <div class="form-footer ai-footer"></div>
 
-    <div class="section-label">云同步</div>
+    <div class="section-label">Sync</div>
     <div class="form-card">
-      <div class="form-row"><span class="label">状态</span><span class="value status-value"></span></div>
-      <button class="row-btn sync-btn">立即同步</button>
-      <button class="row-btn destructive reset-btn">重置同步</button>
+      <div class="form-row"><span class="label">Status</span><span class="value status-value"></span></div>
+      <button class="row-btn sync-btn">Sync Now</button>
+      <button class="row-btn destructive reset-btn">Reset Sync</button>
     </div>
 
-    <div class="section-label" style="padding-top:16px">复习</div>
+    </div>
+
+    <div class="section-label" style="padding-top:16px">Review</div>
     <div class="form-card">
-      <div class="form-row"><span class="label">方向</span><select class="direction-select">
-        <option value="zhToEn">中 → 英</option>
-        <option value="enToZh">英 → 中</option>
+      <div class="form-row"><span class="label">Direction</span><select class="direction-select">
+        <option value="zhToEn">Chinese → English</option>
+        <option value="enToZh">English → Chinese</option>
       </select></div>
     </div>
 
-    <div class="section-label" style="padding-top:16px">语音</div>
+    <div class="section-label" style="padding-top:16px">Voice</div>
     <div class="form-card">
-      <div class="form-row"><span class="label">朗读引擎</span><select class="tts-select">
-        <option value="remote">在线高音质</option>
-        <option value="local">本地系统</option>
+      <div class="form-row"><span class="label">Engine</span><select class="tts-select">
+        <option value="remote">Online (HD)</option>
+        <option value="local">On-device</option>
       </select></div>
-      <div class="form-row"><span class="label">音色</span><select class="tts-voice-select"></select></div>
-      <div class="form-row"><span class="label">语速</span><select class="tts-rate-select">
-        <option value="0.8">慢</option>
-        <option value="1">正常</option>
-        <option value="1.2">快</option>
+      <div class="form-row"><span class="label">Voice</span><select class="tts-voice-select"></select></div>
+      <div class="form-row"><span class="label">Speed</span><select class="tts-rate-select">
+        <option value="0.8">Slow</option>
+        <option value="1">Normal</option>
+        <option value="1.2">Fast</option>
       </select></div>
     </div>
-    <div class="form-footer">在线引擎(Deepgram aura)经由你的 Worker 生成:每个语块首次朗读需联网约 1 秒,之后本机缓存、离线可放;失败时自动回落本地系统语音。切换音色或语速会立刻试听一句。音色仅在线引擎有效。</div>
+    <div class="form-footer">The online engine (Deepgram Aura) runs through your Worker. Each phrase needs about a second online the first time, then plays from the device cache, even offline. If it fails, the on-device voice takes over. Changing voice or speed plays a sample. Voices apply to the online engine only.</div>
 
-    <div class="section-label">数据</div>
+    <div class="section-label">Data</div>
     <div class="form-card">
-      <div class="form-row"><span class="label">总卡片数</span><span class="value count-value"></span></div>
+      <div class="form-row"><span class="label">Cards</span><span class="value count-value"></span></div>
     </div>
+
+    <div class="section-label" style="padding-top:16px">About</div>
+    <div class="form-card">
+      <div class="form-row"><span class="label">Version</span><span class="value">2026.11.20-01</span></div>
+      <button class="row-btn copy-url-btn">Copy App Link</button>
+    </div>
+    <div class="form-footer copy-url-status" role="status"></div>
   `;
 
   urlInput = root.querySelector('.url-input');
@@ -99,7 +119,20 @@ export function mount(el) {
     ttsVoiceSelect.append(opt);
   }
 
+  root.querySelector('.demo-sec').hidden = !isDemo();
+  root.querySelector('.sec-hide-demo').hidden = isDemo();
+  root.querySelector('.exit-demo-btn').addEventListener('click', exitDemo);
   root.querySelector('.save-btn').addEventListener('click', save);
+  root.querySelector('.copy-url-btn').addEventListener('click', async () => {
+    const status = root.querySelector('.copy-url-status');
+    const url = new URL('./', location.href).href;
+    try {
+      await navigator.clipboard.writeText(url);
+      status.textContent = 'Link copied';
+    } catch {
+      status.textContent = `App link: ${url}`;
+    }
+  });
   providerSelect.addEventListener('change', () => {
     setProvider(providerSelect.value);
     refreshAI();
@@ -108,7 +141,7 @@ export function mount(el) {
   directionSelect.addEventListener('change', () => setReviewDirection(directionSelect.value));
   syncBtn.addEventListener('click', () => syncNow());
   resetBtn.addEventListener('click', async () => {
-    if (!confirm('重置同步?本地卡片将清空并从云端全量重拉。')) return;
+    if (!confirm('Reset sync? Cards on this device will be cleared and downloaded again from the cloud.')) return;
     await resetSync();
     refreshCount();
   });
@@ -145,7 +178,7 @@ function refreshAll() {
   const savedURL = getWorkerURL();
   urlInput.placeholder = savedURL || 'https://...workers.dev';
   const token = getToken();
-  tokenInput.placeholder = token ? `已保存 ····${token.slice(-4)}` : '输入口令';
+  tokenInput.placeholder = token ? `Saved ····${token.slice(-4)}` : 'Token';
 
   refreshAI();
   directionSelect.value = getReviewDirection();

@@ -1,7 +1,7 @@
 // Service Worker — 只缓存静态资源(cache-first),API 请求(跨域)一律不拦截。
 // 发版:改 CACHE_NAME 版本号即可让所有静态资源刷新。
 
-const CACHE_NAME = 'chunks-v6';
+const CACHE_NAME = 'chunks-v14';
 
 const PRECACHE = [
   './',
@@ -17,6 +17,9 @@ const PRECACHE = [
   './js/fsrs.js',
   './js/card.js',
   './js/speech.js',
+  './js/translation-history.js',
+  './js/highlight.js',
+  './js/demo-data.js',
   './js/views/translate.js',
   './js/views/library.js',
   './js/views/review.js',
@@ -29,7 +32,20 @@ const PRECACHE = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE)).then(() => self.skipWaiting())
+    (async () => {
+      const assets = await Promise.all(PRECACHE.map(async (path) => {
+        const response = await fetch(new Request(path, { cache: 'reload' }));
+        // 发布传播期间缺失的模块可能被主机兜底成 HTML，不能把它当成脚本缓存。
+        if (!response.ok || (path.endsWith('.js')
+          && !/javascript/i.test(response.headers.get('content-type') ?? ''))) {
+          throw new Error(`Invalid offline asset: ${path}`);
+        }
+        return [path, response];
+      }));
+      const cache = await caches.open(CACHE_NAME);
+      await Promise.all(assets.map(([path, response]) => cache.put(path, response)));
+      await self.skipWaiting();
+    })()
   );
 });
 

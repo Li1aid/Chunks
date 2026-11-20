@@ -37,3 +37,10 @@ test('parseTranslationJSON: garbage throws', () => {
   assert.throws(() => parseTranslationJSON('sorry, I cannot help'));
   assert.throws(() => parseTranslationJSON('{"phrases":[]}')); // 没有 translation 也算失败
 });
+
+test('parseTranslationJSON: keeps src/dst spans when present', () => {
+  const r = parseTranslationJSON('{"translation":"Let\'s order takeout.","phrases":[{"en":"order takeout","zh":"点外卖","src":"点外卖","dst":"order takeout"},{"en":"x","zh":"y","src":3}]}');
+  assert.equal(r.phrases[0].src, '点外卖');
+  assert.equal(r.phrases[0].dst, 'order takeout');
+  assert.equal('src' in r.phrases[1], false);
+});

@@ -1,11 +1,13 @@
-// IndexedDB 封装 — 库 chunks,store cards(keyPath: id)。薄壳,不藏业务逻辑。
+// IndexedDB 封装 — 库 chunks(演示模式用独立的 chunks-demo),store cards(keyPath: id)。薄壳,不藏业务逻辑。
+
+import { isDemo } from './settings.js';
 
 let dbPromise = null;
 
 export function openDB() {
   if (!dbPromise) {
     dbPromise = new Promise((resolve, reject) => {
-      const req = indexedDB.open('chunks', 1);
+      const req = indexedDB.open(isDemo() ? 'chunks-demo' : 'chunks', 1);
       req.onupgradeneeded = () => {
         req.result.createObjectStore('cards', { keyPath: 'id' });
       };

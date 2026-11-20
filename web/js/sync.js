@@ -4,7 +4,7 @@
 import { getAllCards, putCards, putCard, getCard, clearCards } from './db.js';
 import { mergeRemote } from './merge.js';
 import {
-  isConfigured, getWorkerURL, getToken,
+  isConfigured, isDemo, getWorkerURL, getToken,
   getLastPullServerTime, setLastPullServerTime,
   getLastPushAt, setLastPushAt,
   getLastSyncAt, setLastSyncAt, clearSyncCursors,
@@ -12,7 +12,7 @@ import {
 
 class SyncError extends Error {}
 
-let status = isConfigured() && getLastSyncAt() > 0
+let status = isDemo() ? { kind: 'demo' } : isConfigured() && getLastSyncAt() > 0
   ? { kind: 'success', at: getLastSyncAt() }
   : { kind: 'idle' };
 
@@ -33,19 +33,20 @@ function setStatus(s) {
 /** 状态 → 设置页文案。 */
 export function statusText(s) {
   switch (s.kind) {
-    case 'idle': return '未配置';
-    case 'syncing': return '同步中…';
-    case 'success': return `上次同步：${relativeTime(s.at)}`;
+    case 'idle': return 'Not set up';
+    case 'demo': return 'Off in demo';
+    case 'syncing': return 'Syncing…';
+    case 'success': return `Synced ${relativeTime(s.at)}`;
     case 'failed': return s.message;
   }
 }
 
 function relativeTime(atMs) {
   const seconds = (Date.now() - atMs) / 1000;
-  if (seconds < 60) return '刚刚';
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} 分钟前`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)} 小时前`;
-  return `${Math.floor(seconds / 86400)} 天前`;
+  if (seconds < 60) return 'just now';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} h ago`;
+  return `${Math.floor(seconds / 86400)} d ago`;
 }
 
 export const isSyncing = () => status.kind === 'syncing';
@@ -54,7 +55,7 @@ let pendingTimer = null;
 
 /** 写操作后的防抖同步(默认 1.5s,与 iOS 一致)。 */
 export function scheduleSync(delayMs = 1500) {
-  if (!isConfigured()) return;
+  if (!isConfigured() || isDemo()) return;
   clearTimeout(pendingTimer);
   pendingTimer = setTimeout(() => syncNow(), delayMs);
 }
@@ -62,6 +63,7 @@ export function scheduleSync(delayMs = 1500) {
 let syncing = false;
 
 export async function syncNow() {
+  if (isDemo()) return; // 演示数据永远不上传
   if (!isConfigured()) {
     setStatus({ kind: 'idle' });
     return;
@@ -108,7 +110,7 @@ export async function syncNow() {
     setLastSyncAt(now);
     setStatus({ kind: 'success', at: now });
   } catch (e) {
-    setStatus({ kind: 'failed', message: e instanceof SyncError ? e.message : '网络连接失败' });
+    setStatus({ kind: 'failed', message: e instanceof SyncError ? e.message : 'No connection' });
   } finally {
     syncing = false;
   }
@@ -116,8 +118,8 @@ export async function syncNow() {
 
 function checkHTTP(resp) {
   if (resp.status === 200) return;
-  if (resp.status === 401) throw new SyncError('口令错误，请检查');
-  throw new SyncError('服务端错误');
+  if (resp.status === 401) throw new SyncError('Wrong token. Check it in Settings.');
+  throw new SyncError('Server error');
 }
 
 /** 软删除:标记 + 更新时间戳,交给下次 push 传播。 */

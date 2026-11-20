@@ -10,7 +10,7 @@ export const PROVIDERS = {
       { id: 'claude-opus-4-7', label: 'Opus 4.7' },
       { id: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5' },
     ],
-    footer: '海外用户推荐 Claude,翻译质量最好。',
+    footer: 'Best translation quality. Recommended outside China.',
   },
   deepseek: {
     displayName: 'DeepSeek',
@@ -19,7 +19,7 @@ export const PROVIDERS = {
       { id: 'deepseek-chat', label: 'DeepSeek Chat' },
       { id: 'deepseek-reasoner', label: 'DeepSeek Reasoner' },
     ],
-    footer: '国内访问更稳定,价格更友好。',
+    footer: 'More reliable in mainland China, and cheaper.',
   },
 };
 
@@ -45,12 +45,18 @@ export function parseTranslationJSON(text) {
     if (m) obj = tryParse(m[0]);
   }
   if (!obj || typeof obj.translation !== 'string' || !obj.translation) {
-    throw new Error('AI 返回格式异常,请重试');
+    throw new Error('Unexpected AI response. Try again.');
   }
   const phrases = Array.isArray(obj.phrases)
     ? obj.phrases
         .filter((p) => p && typeof p.en === 'string' && typeof p.zh === 'string')
-        .map((p) => ({ en: p.en, zh: p.zh, example: typeof p.example === 'string' ? p.example : '' }))
+        .map((p) => ({
+          en: p.en,
+          zh: p.zh,
+          example: typeof p.example === 'string' ? p.example : '',
+          ...(typeof p.src === 'string' && p.src ? { src: p.src } : {}),
+          ...(typeof p.dst === 'string' && p.dst ? { dst: p.dst } : {}),
+        }))
     : [];
   return { translation: obj.translation, phrases };
 }
@@ -94,7 +100,7 @@ async function callAnthropic(cfg, system, user) {
       messages: [{ role: 'user', content: user }],
     }),
   });
-  if (!resp.ok) throw new Error('AI 接口请求失败');
+  if (!resp.ok) throw new Error(resp.status === 429 ? 'Demo limit reached for today. Try again tomorrow.' : 'Translation service error. Try again.');
   const json = await resp.json();
   return (json.content ?? [])
     .filter((b) => b.type === 'text')
@@ -116,10 +122,10 @@ async function callDeepSeek(cfg, system, user) {
       response_format: { type: 'json_object' },
     }),
   });
-  if (!resp.ok) throw new Error('AI 接口请求失败');
+  if (!resp.ok) throw new Error(resp.status === 429 ? 'Demo limit reached for today. Try again tomorrow.' : 'Translation service error. Try again.');
   const json = await resp.json();
   const content = json.choices?.[0]?.message?.content;
-  if (typeof content !== 'string') throw new Error('AI 返回格式异常,请重试');
+  if (typeof content !== 'string') throw new Error('Unexpected AI response. Try again.');
   return content;
 }
 
@@ -167,9 +173,10 @@ const ZH_TO_EN_PROMPT = `你是一个英文口语翻译引擎。
 {
   "translation": "最自然的英文翻译",
   "phrases": [
-    {"en": "短语或名词", "zh": "中文释义", "example": "一个自然的英文例句"}
+    {"en": "短语或名词", "zh": "中文释义", "example": "一个自然的英文例句", "src": "中文原句里对应的那几个字", "dst": "translation 里对应的那几个词"}
   ]
-}`;
+}
+\`src\` 必须是用户中文原句里的原文片段、一字不改;\`dst\` 必须是你给出的 translation 里的原文片段、一字不改。用于界面上把语块和原句、译文对应高亮。`;
 
 const EN_TO_ZH_PROMPT = `你是一个英文 → 中文翻译引擎,服务于中文母语的英语学习者。
 
@@ -210,6 +217,7 @@ const EN_TO_ZH_PROMPT = `你是一个英文 → 中文翻译引擎,服务于中�
 {
   "translation": "整句的中文翻译",
   "phrases": [
-    {"en": "短语或名词", "zh": "中文释义", "example": "一个自然的英文例句"}
+    {"en": "短语或名词", "zh": "中文释义", "example": "一个自然的英文例句", "src": "英文原文里对应的那几个词", "dst": "translation 里对应的那几个字"}
   ]
-}`;
+}
+\`src\` 必须是用户英文原文里的原文片段、一字不改;\`dst\` 必须是你给出的中文 translation 里的原文片段、一字不改。用于界面上把语块和原文、译文对应高亮。`;

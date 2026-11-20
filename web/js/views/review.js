@@ -18,7 +18,11 @@ let session = null; // { cards, index, isFlipped }
 export function mount(el) {
   root = el;
   root.innerHTML = `
-    <div class="large-title">复习 <button class="direction-toggle"></button></div>
+    <div class="large-title">Review
+      <div class="segmented" role="group" aria-label="Review direction">
+        <button data-dir="zhToEn">ZH → EN</button><button data-dir="enToZh">EN → ZH</button>
+      </div>
+    </div>
     <div class="body-slot"></div>
   `;
   bodyBox = root.querySelector('.body-slot');
@@ -29,17 +33,22 @@ export function mount(el) {
   glowRight.className = 'glow right';
   root.append(glowLeft, glowRight);
 
-  const toggle = root.querySelector('.direction-toggle');
-  toggle.addEventListener('click', () => {
-    setReviewDirection(getReviewDirection() === 'zhToEn' ? 'enToZh' : 'zhToEn');
-    updateToggle();
-    render();
-  });
+  for (const btn of root.querySelectorAll('.segmented button')) {
+    btn.addEventListener('click', () => {
+      if (getReviewDirection() === btn.dataset.dir) return;
+      setReviewDirection(btn.dataset.dir);
+      updateToggle();
+      render();
+    });
+  }
   updateToggle();
 }
 
 function updateToggle() {
-  root.querySelector('.direction-toggle').textContent = getReviewDirection() === 'zhToEn' ? '中→英' : '英→中';
+  const dir = getReviewDirection();
+  const seg = root.querySelector('.segmented');
+  seg.style.setProperty('--seg', dir === 'zhToEn' ? 0 : 1);
+  for (const btn of seg.querySelectorAll('button')) btn.setAttribute('aria-pressed', String(btn.dataset.dir === dir));
 }
 
 export function show() {
@@ -64,8 +73,8 @@ async function render() {
     bodyBox.innerHTML = '';
     const empty = document.createElement('div');
     empty.className = 'empty-state';
-    empty.innerHTML = '<div class="icon">🃏</div><div class="title">再多翻译几句</div><div class="desc"></div>';
-    empty.querySelector('.desc').textContent = `攒够 ${MIN_CARDS_TO_START} 张卡片后开始记忆\n现在 ${all.length} / ${MIN_CARDS_TO_START}`;
+    empty.innerHTML = '<div class="icon">🃏</div><div class="title">Translate a few more</div><div class="desc"></div>';
+    empty.querySelector('.desc').textContent = `Reviews start at ${MIN_CARDS_TO_START} cards.\n${all.length} / ${MIN_CARDS_TO_START} so far`;
     bodyBox.append(empty);
     return;
   }
@@ -90,31 +99,72 @@ function renderHome(all) {
   const stats = document.createElement('div');
   stats.className = 'stats';
   stats.append(
-    statCell('待复习', dueCount, dueCount > 0 ? 'var(--red)' : 'var(--secondary)'),
+    statCell('Due', dueCount, dueCount > 0 ? 'var(--red)' : 'var(--secondary)'),
     divider(),
-    statCell('已熟练', mastered, mastered > 0 ? 'var(--green)' : 'var(--secondary)'),
+    statCell('Mastered', mastered, mastered > 0 ? 'var(--green)' : 'var(--secondary)'),
     divider(),
-    statCell('总数', all.length, 'var(--accent)')
+    statCell('Total', all.length, 'var(--accent)')
   );
   bodyBox.append(stats);
+  bodyBox.append(forecast(all, nowMs));
 
   const queue = todayQueue(all, nowMs);
   if (queue.length === 0) {
     const done = document.createElement('div');
     done.className = 'finished-card';
-    done.innerHTML = '<div class="check">✓</div><div class="title">今天的复习搞定了</div><div class="sub">明天再来 ✌</div>';
+    done.innerHTML = '<div class="check">✓</div><div class="title">All done for today</div><div class="sub">See you tomorrow ✌</div>';
     bodyBox.append(done);
     return;
   }
 
   const start = document.createElement('button');
   start.className = 'btn-primary';
-  start.textContent = `开始复习 · ${queue.length} 张`;
+  start.textContent = `Start Review · ${queue.length}`;
   start.addEventListener('click', () => {
     session = { cards: queue, index: 0, isFlipped: false };
     renderReviewing();
   });
   bodyBox.append(start);
+}
+
+/** 未来 7 天每天到期的卡数(已过期的算进今天)— 让间隔重复的排布看得见。 */
+function forecast(all, nowMs) {
+  const start = new Date(nowMs); start.setHours(0, 0, 0, 0);
+  const counts = new Array(7).fill(0);
+  let dueNow = 0; // 今天这根柱子里「现在就能复习」的部分,与 Due 同口径
+  for (const c of all) {
+    if (currentR(c, nowMs) < DESIRED_RETENTION) { counts[0] += 1; dueNow += 1; continue; }
+    const day = Math.floor((c.due - start.getTime()) / DAY_MS);
+    if (day < 7) counts[Math.max(0, day)] += 1;
+  }
+  const max = Math.max(1, ...counts);
+  const box = document.createElement('div');
+  box.className = 'forecast';
+  box.setAttribute('role', 'img');
+  box.setAttribute('aria-label', `Cards due over the next 7 days: ${counts.join(', ')}. ${dueNow} ready now.`);
+  counts.forEach((n, i) => {
+    const d = new Date(start.getTime() + i * DAY_MS);
+    const col = document.createElement('div');
+    col.className = 'fc-col' + (i === 0 ? ' today' : '');
+    col.style.setProperty('--i', i);
+    const num = document.createElement('span');
+    num.className = 'fc-num';
+    num.textContent = n || '';
+    const bar = document.createElement('span');
+    bar.className = 'fc-bar';
+    bar.style.height = `${n ? 8 + (n / max) * 92 : 4}%`;
+    if (i === 0 && n) {
+      const now = document.createElement('i');
+      now.style.height = `${(dueNow / n) * 100}%`;
+      bar.append(now);
+    }
+    const day = document.createElement('span');
+    day.className = 'fc-day';
+    day.textContent = d.toLocaleDateString('en', { weekday: 'narrow' });
+    col.append(num, bar, day);
+    box.append(col);
+  });
+  return box;
 }
 
 function todayQueue(all, nowMs) {
@@ -150,13 +200,22 @@ function renderReviewing() {
 
   bodyBox.innerHTML = '';
 
+  // 进度用一条进度条表达,不写「3 / 30」
   const progress = document.createElement('div');
   progress.className = 'review-progress';
-  progress.textContent = `${session.index + 1} / ${session.cards.length}`;
+  progress.setAttribute('role', 'progressbar');
+  progress.setAttribute('aria-valuemin', '0');
+  progress.setAttribute('aria-valuemax', String(session.cards.length));
+  progress.setAttribute('aria-valuenow', String(session.index));
+  const fill = document.createElement('i');
+  fill.style.width = `${(session.index / session.cards.length) * 100}%`;
+  progress.append(fill);
   bodyBox.append(progress);
+  requestAnimationFrame(() => { fill.style.width = `${((session.index + 1) / session.cards.length) * 100}%`; });
 
+  // 身后露出的卡边 = 还有牌
   const stage = document.createElement('div');
-  stage.className = 'flashcard-stage';
+  stage.className = 'flashcard-stage' + (session.index < session.cards.length - 1 ? ' has-more' : '');
   const drag = document.createElement('div'); // 拖拽层(位移 + 倾斜)
   const flip = document.createElement('div'); // 翻转层(3D)
   flip.className = 'flashcard' + (session.isFlipped ? ' flipped' : '');
@@ -166,6 +225,17 @@ function renderReviewing() {
   bodyBox.append(stage);
 
   attachGestures(stage, drag, flip);
+
+  // 每次开始复习,两侧先各闪一下:左红右绿,不用文字说明方向
+  if (session.index === 0 && !session.hinted) {
+    session.hinted = true;
+    for (const g of [glowLeft, glowRight]) {
+      g.classList.remove('hint');
+      void g.offsetWidth;
+      g.classList.add('hint');
+      g.addEventListener('animationend', () => g.classList.remove('hint'), { once: true });
+    }
+  }
 }
 
 function face(card, direction, side) {
@@ -176,10 +246,7 @@ function face(card, direction, side) {
     const main = document.createElement('div');
     main.className = 'main' + (direction === 'zhToEn' ? ' zh' : '');
     main.textContent = direction === 'zhToEn' ? card.zh : card.en;
-    const hint = document.createElement('div');
-    hint.className = 'flip-hint';
-    hint.textContent = '轻点查看答案';
-    el.append(main, hint);
+    el.append(main);
     return el;
   }
 
@@ -200,13 +267,13 @@ function face(card, direction, side) {
   if (card.example) {
     const ex = document.createElement('div');
     ex.className = 'example';
-    ex.textContent = `「${card.example}」`;
+    ex.textContent = `“${card.example}”`;
     el.append(ex);
   }
   if (card.sourceZh && card.sourceZh !== card.zh) {
     const src = document.createElement('div');
     src.className = 'source';
-    src.textContent = `来自：${card.sourceZh}`;
+    src.textContent = `From: ${card.sourceZh}`;
     el.append(src);
   }
 
@@ -215,7 +282,7 @@ function face(card, direction, side) {
   speaker.innerHTML = SPEAKER_SVG;
   speaker.addEventListener('click', (e) => {
     e.stopPropagation();
-    speak(card.en);
+    speak(card.en, speaker);
   });
   el.append(speaker);
   return el;
@@ -305,9 +372,28 @@ function attachGestures(stage, drag, flip) {
   });
 }
 
+/** 评分后浮起下次复习时间(来自 FSRS 的真实间隔)。 */
+function showNext(intervalDays, forgot) {
+  const days = Math.max(1, Math.round(intervalDays));
+  let text;
+  if (days === 1) text = forgot ? 'Again tomorrow' : 'Next tomorrow';
+  else if (days < 60) text = `Next in ${days} days`;
+  else text = `Next in ${Math.round(days / 30)} months`;
+  root.querySelector('.next-toast')?.remove();
+  const toast = document.createElement('div');
+  toast.className = 'next-toast ' + (forgot ? 'red' : 'green');
+  toast.textContent = text;
+  root.append(toast);
+  setTimeout(() => toast.remove(), 1500);
+}
+
 function setGlow(progress) {
-  glowLeft.style.opacity = progress < 0 ? Math.min(1, -progress) : 0;
-  glowRight.style.opacity = progress > 0 ? Math.min(1, progress) : 0;
+  const l = progress < 0 ? Math.min(1, -progress) : 0;
+  const r = progress > 0 ? Math.min(1, progress) : 0;
+  glowLeft.style.opacity = l;
+  glowRight.style.opacity = r;
+  glowLeft.style.setProperty('--p', l);
+  glowRight.style.setProperty('--p', r);
 }
 
 // ===== 评分:bootstrap + FSRS + 回写(含 SM-2 旧字段)=====
@@ -342,6 +428,7 @@ async function rate(rating) {
 
   await putCard(card);
   scheduleSync();
+  showNext(result.intervalDays, rating === RATING.forgot);
 
   session.isFlipped = false;
   session.index += 1;
