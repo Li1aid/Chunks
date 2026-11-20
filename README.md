@@ -31,6 +31,10 @@ Vocabulary apps teach words you never use. Translators give you the sentence and
 - **Sync** — offline-first, last-write-wins by timestamp, soft deletes so every device learns about removals.
 - **Scheduling** — FSRS on iOS and the web PWA; an older, separate PWA used a simplified three-grade SM-2.
 
+## Deploy
+
+Pushing to `main` deploys automatically (`.github/workflows/deploy.yml`): tests run, then the Worker (`worker/`) and the web app (`web/` → Cloudflare Pages `chunks-web`) are published. The workflow needs two repository secrets: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Worker secrets (`ALLOWED_TOKEN`, `ANTHROPIC_API_KEY`, `DEEPSEEK_API_KEY`) live in Cloudflare and are not touched by deploys.
+
 ## Run it locally
 
 1. Open `Chunks.xcodeproj` in Xcode.
@@ -48,6 +52,7 @@ Chunks/
   Models/                SwiftData models (Card)
   Services/              AI service, cloud sync, keychain, FSRS scheduler
   Views/                 Tabs: Translate, Library, Review, Settings
+worker/                  Cloudflare Worker: AI proxy, card sync (D1), TTS, public demo
 web/
   index.html             PWA shell (four tabs)
   js/                    fsrs, sync, ai, card, merge + one module per tab

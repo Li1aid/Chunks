@@ -1,0 +1,15 @@
+# flashcards Worker — 从 dashboard 管理迁移到 wrangler(2026-09-05)
+# 部署:npx wrangler deploy   回滚:npx wrangler rollback
+# Secrets(ALLOWED_TOKEN / ANTHROPIC_API_KEY / DEEPSEEK_API_KEY)在 Cloudflare 侧保存,部署不影响。
+
+name = "flashcards"
+main = "worker.js"
+compatibility_date = "2026-05-05"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "flshcards"
+database_id = "96a97103-8d23-4ac0-9df9-f6165a683c8a"
+
+[ai]
+binding = "AI"
