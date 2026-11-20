@@ -758,3 +758,54 @@ textarea.input::placeholder { color: var(--tertiary); }
 .speaker-btn.playing svg path:not([fill]) { animation: wave 0.9s ease-in-out infinite; transform-origin: 40% 50%; }
 .speaker-btn.playing svg path:not([fill]) + path { animation-delay: 0.18s; }
 @keyframes wave { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+/* ===== 电脑上显示成一部手机 =====
+   宽屏 + 鼠标时,整个 app 装进居中的手机外框。body 加 transform,
+   让 position:fixed 的标签栏、光晕和提示都相对「手机」定位,不跑到外面。 */
+@media (min-width: 760px) and (hover: hover) and (pointer: fine) {
+  html {
+    height: 100%;
+    display: grid;
+    place-items: center;
+    background:
+      radial-gradient(1200px 700px at 50% 0%, #ffffff 0%, rgba(255, 255, 255, 0) 70%),
+      linear-gradient(180deg, #ececf1 0%, #dcdce4 100%);
+  }
+  body {
+    width: 402px;
+    height: min(874px, calc(100vh - 48px));
+    transform: translateZ(0);
+    border-radius: 56px;
+    overflow: hidden;
+    box-shadow:
+      0 0 0 11px #141416,
+      0 0 0 13px #3a3a40,
+      0 40px 80px rgba(20, 20, 40, 0.28),
+      0 12px 24px rgba(20, 20, 40, 0.18);
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    top: 11px;
+    left: 50%;
+    width: 124px;
+    height: 36px;
+    border-radius: 18px;
+    background: #000;
+    transform: translateX(-50%);
+    z-index: 30;
+    pointer-events: none;
+  }
+  .panel { padding-top: 58px; }
+  .app-update { padding-top: 56px; }
+  #tabbar { bottom: 16px; }
+
+  @media (prefers-color-scheme: dark) {
+    html {
+      background:
+        radial-gradient(1200px 700px at 50% 0%, #2a2a30 0%, rgba(42, 42, 48, 0) 70%),
+        linear-gradient(180deg, #17171a 0%, #0b0b0d 100%);
+    }
+    body { box-shadow: 0 0 0 11px #000, 0 0 0 13px #3a3a40, 0 40px 80px rgba(0, 0, 0, 0.6); }
+  }
+}
